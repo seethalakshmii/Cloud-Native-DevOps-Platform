@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+
+metadata:
+  name: backend-alert
+  namespace: monitoring
+
+spec:
+  groups:
+
+  - name: backend-alerts
+
+    rules:
+
+    - alert: BackendDown
+
+      expr: up{job="backend"} == 0
+
+      for: 2m
+
+      labels:
+        severity: critical
+
+      annotations:
+        summary: Backend service is down
+
+        description: Backend service has been unavailable for 2 minutes
