@@ -1,4 +1,6 @@
-# IAM Policy
+# =====================================================
+# IAM POLICY FOR EXTERNAL SECRETS
+# =====================================================
 
 resource "aws_iam_policy" "external_secrets" {
 
@@ -23,12 +25,15 @@ resource "aws_iam_policy" "external_secrets" {
   })
 }
 
-
-# Trust Policy
+# =====================================================
+# TRUST POLICY (IRSA)
+# =====================================================
 
 data "aws_iam_policy_document" "external_secrets_assume_role" {
 
   statement {
+
+    effect = "Allow"
 
     actions = [
       "sts:AssumeRoleWithWebIdentity"
@@ -43,19 +48,21 @@ data "aws_iam_policy_document" "external_secrets_assume_role" {
     }
 
     condition {
+
       test = "StringEquals"
 
       variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub"
 
       values = [
-        "system:serviceaccount:external-secrets:external-secrets"
+        "system:serviceaccount:external-secrets-system:external-secrets"
       ]
     }
   }
 }
 
-
-# IAM Role
+# =====================================================
+# IAM ROLE
+# =====================================================
 
 resource "aws_iam_role" "external_secrets" {
 
@@ -64,8 +71,9 @@ resource "aws_iam_role" "external_secrets" {
   assume_role_policy = data.aws_iam_policy_document.external_secrets_assume_role.json
 }
 
-
-# Attach Policy
+# =====================================================
+# ATTACH POLICY TO ROLE
+# =====================================================
 
 resource "aws_iam_role_policy_attachment" "external_secrets" {
 
@@ -73,6 +81,3 @@ resource "aws_iam_role_policy_attachment" "external_secrets" {
 
   policy_arn = aws_iam_policy.external_secrets.arn
 }
-
-
-
