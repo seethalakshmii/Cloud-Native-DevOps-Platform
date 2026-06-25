@@ -76,5 +76,4 @@ jobs:
           git commit -m "Deploy frontend ${{ github.sha }}" || exit 0
 
           git pull --rebase origin main || true
-
           git push origin main

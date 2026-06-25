@@ -93,5 +93,4 @@ jobs:
           git commit -m "Deploy backend ${{ github.sha }}" || exit 0
 
           git pull --rebase origin main || true
-
           git push origin main
