@@ -6,8 +6,7 @@ on:
       - main
     paths:
       - 'backend/**'
-      - 'k8s/**'
-      - '.github/workflows/**'
+      - '.github/workflows/backend-ci.yml'
 
 permissions:
   id-token: write
@@ -19,81 +18,79 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install Dependencies
-        run: |
+      - run: |
           pip install -r backend/requirements.txt
           pip install pytest
 
-      - name: Run Tests
-        run: |
-          pytest backend/test-app.py
-
+      - run: pytest backend/test-app.py
 
   build:
     needs: test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      # AWS AUTH (OIDC)
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-west-1
 
-      # LOGIN ECR
-      - name: Login to Amazon ECR
+      - name: Login to ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # BUILD IMAGE (correct repo name)
-      - name: Build Docker Image
+      - name: Build Image
         run: |
           docker build \
             -t task5-backend:${{ github.sha }} \
             ./backend
 
-      # TAG IMAGE (correct ECR repo)
-      - name: Tag Docker Image
+      - name: Tag Image
         run: |
           docker tag task5-backend:${{ github.sha }} \
-            ${{ steps.login-ecr.outputs.registry }}/task5-backend:${{ github.sha }}
+          ${{ steps.login-ecr.outputs.registry }}/task5-backend:${{ github.sha }}
 
-      # PUSH IMAGE
-      - name: Push Docker Image
+      - name: Push Image
         run: |
           docker push \
-            ${{ steps.login-ecr.outputs.registry }}/task5-backend:${{ github.sha }}
+          ${{ steps.login-ecr.outputs.registry }}/task5-backend:${{ github.sha }}
 
-      # UPDATE K8S MANIFEST (ArgoCD)
-      - name: Update Staging Rollout Manifest
+      - name: Update Staging Manifest
         run: |
           IMAGE=${{ steps.login-ecr.outputs.registry }}/task5-backend:${{ github.sha }}
 
           sed -i \
-            "s|image: .*|image: ${IMAGE}|g" \
-            k8s/staging/backend-rollout.yaml
+          "s|image: .*task5-backend:.*|image: ${IMAGE}|g" \
+          k8s/staging/backend-rollout.yaml
 
-      # SAFE GIT PUSH FIX (IMPORTANT FIX)
-      - name: Commit Manifest Changes
+      - name: Update Prod Manifest
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          IMAGE=${{ steps.login-ecr.outputs.registry }}/task5-backend:${{ github.sha }}
 
-          git add k8s/staging/backend-rollout.yaml
+          sed -i \
+          "s|image: .*task5-backend:.*|image: ${IMAGE}|g" \
+          k8s/prod/backend-rollout.yaml
 
-          git commit -m "Update backend image to ${{ github.sha }}" || exit 0
+      - name: Commit Changes
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          git add \
+            k8s/staging/backend-rollout.yaml \
+            k8s/prod/backend-rollout.yaml
+
+          git commit -m "Deploy backend ${{ github.sha }}" || exit 0
 
           git pull --rebase origin main || true
 

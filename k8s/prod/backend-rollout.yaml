@@ -22,8 +22,7 @@ spec:
 
       - name: backend
 
-        image: 622488711452.dkr.ecr.us-west-1.amazonaws.com/task5-backend:0ea52283da1473464b7587a7f9f4b64a967f6b33
-
+        image: 622488711452.dkr.ecr.us-west-1.amazonaws.com/task5-backend:latest
         imagePullPolicy: Always
 
         ports:
