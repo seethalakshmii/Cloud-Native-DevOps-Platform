@@ -1,20 +1,19 @@
 async function load() {
-    const res1 = await fetch("/api/health");
-    const data1 = await res1.json();
-    document.getElementById("health").innerText = data1.status;
 
-    const res2 = await fetch("/api/");
-    const data2 = await res2.json();
-    document.getElementById("msg").innerText = data2.message;
+    const health = await fetch("/health");
+    const healthData = await health.json();
+    document.getElementById("health").innerText = healthData.status;
+
+    const home = await fetch("/");
+    const homeData = await home.json();
+    document.getElementById("msg").innerText = homeData.message;
 }
 
 load();
 
 
-// -------------------------
-// FORM SUBMIT → RDS
-// -------------------------
 document.getElementById("form").addEventListener("submit", async (e) => {
+
     e.preventDefault();
 
     const data = {
@@ -23,40 +22,48 @@ document.getElementById("form").addEventListener("submit", async (e) => {
         message: document.getElementById("message").value
     };
 
-    const res = await fetch("/api/submit", {
+    const res = await fetch("/submit", {
+
         method: "POST",
+
         headers: {
             "Content-Type": "application/json"
         },
+
         body: JSON.stringify(data)
+
     });
 
     const result = await res.json();
-    document.getElementById("response").innerText = result.message || result.error;
+
+    document.getElementById("response").innerText =
+        result.message || result.error;
 });
 
 
-// -------------------------
-// S3 FILE UPLOAD
-// -------------------------
 async function uploadFile() {
-    const fileInput = document.getElementById("fileInput");
 
-    if (!fileInput.files.length) {
-        alert("Please select a file");
+    const file = document.getElementById("fileInput").files[0];
+
+    if (!file) {
+        alert("Choose a file first");
         return;
     }
 
     const formData = new FormData();
-    formData.append("file", fileInput.files[0]);
 
-    const res = await fetch("/api/upload", {
+    formData.append("file", file);
+
+    const res = await fetch("/upload", {
+
         method: "POST",
+
         body: formData
+
     });
 
-    const data = await res.json();
+    const result = await res.json();
 
     document.getElementById("uploadStatus").innerText =
-        data.message || data.error;
+        result.message || result.error;
 }

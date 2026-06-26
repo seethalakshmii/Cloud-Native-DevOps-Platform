@@ -1,41 +1,50 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>DevOps App</title>
+    <title>Cloud Native DevOps Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<h1>Cloud DevOps Dashboard</h1>
+<h1>Cloud Native DevOps Dashboard</h1>
 
 <p id="msg">Loading...</p>
 <p id="health">Loading...</p>
 
 <hr>
 
-<h3>Submit Data (RDS)</h3>
+<h2>Submit Data</h2>
 
 <form id="form">
+
     <input id="name" placeholder="Name" required><br><br>
+
     <input id="email" placeholder="Email" required><br><br>
+
     <textarea id="message" placeholder="Message" required></textarea><br><br>
 
-    <button type="submit">Send</button>
+    <button type="submit">Submit</button>
+
 </form>
 
 <p id="response"></p>
 
 <hr>
 
-<h3>Upload File → S3 → Lambda → SES Email</h3>
+<h2>Upload File to S3</h2>
 
-<input type="file" id="fileInput" />
-<button onclick="uploadFile()">Upload to S3</button>
+<input type="file" id="fileInput">
+
+<button onclick="uploadFile()">
+Upload
+</button>
 
 <p id="uploadStatus"></p>
 
 <script src="script.js"></script>
 
 </body>
+
 </html>

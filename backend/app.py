@@ -6,41 +6,37 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-s3 = boto3.client("s3")
-
+# AWS Configuration
+AWS_REGION = os.getenv("AWS_REGION", "us-west-1")
 S3_BUCKET = os.getenv("S3_BUCKET")
 
+s3 = boto3.client("s3", region_name=AWS_REGION)
 
-# -------------------------------------------------
+
+# -------------------------
 # HOME
-# -------------------------------------------------
-
-@app.route("/")
-@app.route("/api/")
+# -------------------------
+@app.route("/", methods=["GET"])
 def home():
     return jsonify({
         "message": "Cloud Native DevOps Project"
-    }), 200
+    })
 
 
-# -------------------------------------------------
+# -------------------------
 # HEALTH
-# -------------------------------------------------
-
-@app.route("/health")
-@app.route("/api/health")
+# -------------------------
+@app.route("/health", methods=["GET"])
 def health():
     return jsonify({
         "status": "healthy"
-    }), 200
+    })
 
 
-# -------------------------------------------------
-# SAVE FORM TO RDS
-# -------------------------------------------------
-
+# -------------------------
+# SAVE TO RDS
+# -------------------------
 @app.route("/submit", methods=["POST"])
-@app.route("/api/submit", methods=["POST"])
 def submit():
 
     try:
@@ -50,13 +46,6 @@ def submit():
         if not data:
             return jsonify({"error": "No JSON received"}), 400
 
-        name = data.get("name")
-        email = data.get("email")
-        message = data.get("message")
-
-        if not name or not email or not message:
-            return jsonify({"error": "Missing fields"}), 400
-
         conn = get_connection()
         cursor = conn.cursor()
 
@@ -65,7 +54,11 @@ def submit():
             INSERT INTO users(name,email,message)
             VALUES(%s,%s,%s)
             """,
-            (name, email, message)
+            (
+                data["name"],
+                data["email"],
+                data["message"]
+            )
         )
 
         conn.commit()
@@ -84,12 +77,10 @@ def submit():
         }), 500
 
 
-# -------------------------------------------------
-# VIEW USERS
-# -------------------------------------------------
-
-@app.route("/users")
-@app.route("/api/users")
+# -------------------------
+# GET USERS
+# -------------------------
+@app.route("/users", methods=["GET"])
 def users():
 
     try:
@@ -104,7 +95,18 @@ def users():
         cursor.close()
         conn.close()
 
-        return jsonify(rows)
+        users = []
+
+        for row in rows:
+
+            users.append({
+                "id": row[0],
+                "name": row[1],
+                "email": row[2],
+                "message": row[3]
+            })
+
+        return jsonify(users)
 
     except Exception as e:
 
@@ -113,12 +115,10 @@ def users():
         }), 500
 
 
-# -------------------------------------------------
-# FILE UPLOAD TO S3
-# -------------------------------------------------
-
+# -------------------------
+# UPLOAD FILE TO S3
+# -------------------------
 @app.route("/upload", methods=["POST"])
-@app.route("/api/upload", methods=["POST"])
 def upload():
 
     try:
@@ -144,7 +144,7 @@ def upload():
         )
 
         return jsonify({
-            "message": f"{filename} uploaded successfully"
+            "message": f"{filename} uploaded successfully to S3"
         })
 
     except Exception as e:
@@ -153,10 +153,6 @@ def upload():
             "error": str(e)
         }), 500
 
-
-# -------------------------------------------------
-# RUN
-# -------------------------------------------------
 
 if __name__ == "__main__":
     app.run(
