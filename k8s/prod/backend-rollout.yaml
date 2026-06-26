@@ -53,6 +53,9 @@ spec:
             secretKeyRef:
               name: mysql-secret
               key: database
+            
+        - name: S3_BUCKET
+          value: task5-uploads
 
         readinessProbe:
           httpGet:

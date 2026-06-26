@@ -2,35 +2,35 @@ from flask import Flask, request, jsonify
 from database import get_connection
 import boto3
 import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# S3 Client
 s3 = boto3.client("s3")
 
-# Bucket name from environment variable
-S3_BUCKET = os.environ.get("S3_BUCKET")
-
-
+# ===========================
+# Home
+# ===========================
 @app.route("/")
 def home():
     return jsonify({"message": "Cloud Native DevOps Project"})
 
 
+# ===========================
+# Health
+# ===========================
 @app.route("/health")
 def health():
     return jsonify({"status": "healthy"})
 
 
-# -----------------------------
-# Save data to RDS
-# -----------------------------
+# ===========================
+# Save form to RDS
+# ===========================
 @app.route("/submit", methods=["POST"])
 def submit():
-
     try:
-
-        data = request.get_json()
+        data = request.json
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -52,16 +52,15 @@ def submit():
         cursor.close()
         conn.close()
 
-        return jsonify({"message": "Saved to RDS successfully"})
+        return jsonify({"message": "Saved to RDS"})
 
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
 
 
-# -----------------------------
-# View database
-# -----------------------------
+# ===========================
+# View users
+# ===========================
 @app.route("/users")
 def users():
 
@@ -78,37 +77,61 @@ def users():
     return jsonify(rows)
 
 
-# -----------------------------
+# ===========================
 # Upload file to S3
-# -----------------------------
+# ===========================
 @app.route("/upload", methods=["POST"])
 def upload():
 
     try:
 
+        bucket = os.getenv("S3_BUCKET")
+
+        if not bucket:
+            return jsonify(
+                {
+                    "error": "S3_BUCKET environment variable is not configured"
+                }
+            ), 500
+
         if "file" not in request.files:
-            return jsonify({"error": "No file uploaded"}), 400
+            return jsonify(
+                {
+                    "error": "No file uploaded"
+                }
+            ), 400
 
         file = request.files["file"]
 
         if file.filename == "":
-            return jsonify({"error": "No filename"}), 400
+            return jsonify(
+                {
+                    "error": "No file selected"
+                }
+            ), 400
+
+        filename = secure_filename(file.filename)
 
         s3.upload_fileobj(
             file,
-            S3_BUCKET,
-            file.filename
+            bucket,
+            filename
         )
 
-        return jsonify({
-            "message": "File uploaded successfully to S3"
-        })
+        return jsonify(
+            {
+                "message": "File uploaded successfully",
+                "bucket": bucket,
+                "file": filename
+            }
+        )
 
     except Exception as e:
-
-        return jsonify({
-            "error": str(e)
-        }), 500
+        return jsonify(
+            {
+                "error": str(e)
+            }
+        ), 500
 
 
 if __name__ == "__main__":
