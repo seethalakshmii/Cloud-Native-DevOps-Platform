@@ -36,17 +36,24 @@ jobs:
         run: |
           docker build \
             -t task5-frontend:${{ github.sha }} \
+            -t task5-frontend:latest \
             ./frontend
 
-      - name: Tag Image
+      - name: Tag Images
         run: |
           docker tag task5-frontend:${{ github.sha }} \
-          ${{ steps.login-ecr.outputs.registry }}/task5-frontend:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/task5-frontend:${{ github.sha }}
 
-      - name: Push Image
+          docker tag task5-frontend:latest \
+            ${{ steps.login-ecr.outputs.registry }}/task5-frontend:latest
+
+      - name: Push Images
         run: |
           docker push \
-          ${{ steps.login-ecr.outputs.registry }}/task5-frontend:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/task5-frontend:${{ github.sha }}
+
+          docker push \
+            ${{ steps.login-ecr.outputs.registry }}/task5-frontend:latest
 
       - name: Update Staging Manifest
         run: |
