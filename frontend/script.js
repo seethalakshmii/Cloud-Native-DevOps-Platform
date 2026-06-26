@@ -1,81 +1,77 @@
-async function load() {
+document.addEventListener("DOMContentLoaded", () => {
+    load();
 
-    const health = await fetch("/api/health");
-    const healthData = await health.json();
+    document.getElementById("form").addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-    document.getElementById("health").innerText =
-        healthData.status;
+        try {
+            const body = {
+                name: document.getElementById("name").value,
+                email: document.getElementById("email").value,
+                message: document.getElementById("message").value
+            };
 
-    const home = await fetch("/api/");
-    const homeData = await home.json();
+            const res = await fetch("/api/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(body)
+            });
 
-    document.getElementById("msg").innerText =
-        homeData.message;
-}
+            const result = await res.json();
 
-load();
+            document.getElementById("response").innerText =
+                result.message || result.error;
 
-
-document.getElementById("form").addEventListener("submit", async (e) => {
-
-    e.preventDefault();
-
-    const body = {
-
-        name: document.getElementById("name").value,
-
-        email: document.getElementById("email").value,
-
-        message: document.getElementById("message").value
-    };
-
-    const res = await fetch("/api/submit", {
-
-        method: "POST",
-
-        headers: {
-            "Content-Type": "application/json"
-        },
-
-        body: JSON.stringify(body)
+        } catch (err) {
+            console.error(err);
+            document.getElementById("response").innerText = "Submit failed";
+        }
     });
-
-    const result = await res.json();
-
-    document.getElementById("response").innerText =
-        result.message || result.error;
 });
 
+async function load() {
+    try {
+        const health = await fetch("/api/health");
+        const healthData = await health.json();
+        document.getElementById("health").innerText = healthData.status;
+
+        const home = await fetch("/api/");
+        const homeData = await home.json();
+        document.getElementById("msg").innerText = homeData.message;
+
+    } catch (err) {
+        console.error(err);
+        document.getElementById("msg").innerText = "Backend not reachable";
+        document.getElementById("health").innerText = "Error";
+    }
+}
 
 async function uploadFile() {
+    try {
+        const fileInput = document.getElementById("fileInput");
 
-    const fileInput =
-        document.getElementById("fileInput");
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert("Please choose a file");
+            return;
+        }
 
-    if (fileInput.files.length === 0) {
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
 
-        alert("Please choose a file");
-
-        return;
-    }
-
-    const formData = new FormData();
-
-    formData.append(
-        "file",
-        fileInput.files[0]
-    );
-
-    const response = await fetch(
-        "/api/upload",
-        {
+        const response = await fetch("/api/upload", {
             method: "POST",
             body: formData
-        }
-    );
+        });
 
-    const result = await response.json();
+        const result = await response.json();
 
-    document.getElementById("uploadStatus").innerText =
-        result.message || result.error;
+        document.getElementById("uploadStatus").innerText =
+            result.message || result.error;
+
+    } catch (err) {
+        console.error(err);
+        document.getElementById("uploadStatus").innerText = "Upload failed";
+    }
 }
